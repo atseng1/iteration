@@ -7,6 +7,7 @@ output: github_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(rvest)
 
 set.seed(1)
 
@@ -105,5 +106,83 @@ for (i in 1:4) {
 }
 
 output
+```
+
+
+
+## Map
+Can map over an input
+```{r}
+output_map = map(df, mean_and_sd)
+
+output_median = map(df, median)
+
+output_summary = map(df, summary)
+
+
+output_median_dbl = map_dbl(df, median)
+output_median_dfr = map_dfr(df, median)
+
+
+output = map(df, ~mean_and_sd(.x))
+```
+~ tells R that we are being very explicit about what we are mapping
+
+
+
+## Map Variants
+### Revisiting Napolean
+```{r}
+read_page_reviews = function(url) {
+  
+  h = read_html(url)
+  
+  title = h %>%
+    html_nodes("#cm_cr-review_list .review-title") %>%
+    html_text()
+  
+  stars = h %>%
+    html_nodes("#cm_cr-review_list .review-rating") %>%
+    html_text() %>%
+    str_extract("\\d") %>%
+    as.numeric()
+  
+  text = h %>%
+    html_nodes(".review-data:nth-child(5)") %>%
+    html_text()
+  
+  data_frame(title, stars, text)
+}
+```
+
+```{r}
+url_base = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber="
+
+vec_urls = str_c(url_base, 1:5)
+vec_urls
+```
+
+
+We could do this:
+```{r}
+read_page_reviews(vec_urls[[1]])
+read_page_reviews(vec_urls[[2]])
+read_page_reviews(vec_urls[[3]])
+read_page_reviews(vec_urls[[4]])
+read_page_reviews(vec_urls[[5]])
+```
+
+
+Or we could write a for loop:
+```{r}
+output = vector("list", length = 5)
+
+for (i in 1:5) {
+  output[[i]] = read_page_reviews(vec_urls[[i]])
+}
+
+dynamite_reviews = bind_rows(output)
+
+dynamite_reviews = map_df(vec_urls, read_page_reviews)
 ```
 
