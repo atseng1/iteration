@@ -282,3 +282,16 @@ weather_nest %>%
   filter(name != "CentralPark_NY")
 ```
 
+
+
+## Revisiting past examples
+```{r}
+dynamite_reviews = 
+  tibble(
+    page = 1:5,
+    urls = str_c(url_base, page)) %>% 
+  mutate(reviews = map(urls, read_page_reviews)) %>% 
+  unnest(reviews) %>% 
+  select(-urls)
+```
+
