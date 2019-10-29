@@ -186,3 +186,99 @@ dynamite_reviews = bind_rows(output)
 dynamite_reviews = map_df(vec_urls, read_page_reviews)
 ```
 
+
+
+## List columns
+
+
+Revisiting weather data:
+```{r}
+weather = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2016-01-01",
+    date_max = "2016-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY", 
+                      USC00519397 = "Waikiki_HA",
+                      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+
+Let's imagine that (for whatever reason) we are interested in the weather data scale:
+```{r}
+weather_nest = 
+  weather %>% 
+  nest(data = date:tmin)
+
+weather_nest
+```
+
+
+Is the list column really a list?
+```{r}
+weather_nest %>% pull(name)
+weather_nest %>% pull(data)
+
+weather_nest$data[[1]]
+
+weather_nest %>% 
+  unnest()
+```
+
+
+
+## Operations on list columns
+
+Can I do useful things with a list column?
+```{r}
+central_park_df = weather_nest$data[[1]]
+
+lm(tmax ~ tmin, data = central_park_df)
+
+lm(tmax ~ tmin, data = weather_nest$data[[1]])
+lm(tmax ~ tmin, data = weather_nest$data[[2]])
+lm(tmax ~ tmin, data = weather_nest$data[[3]])
+```
+
+
+We should try a loop
+```{r}
+output = vector("list", length = 3)
+
+for (i in 1:3) {
+  output[[i]] = lm(tmax ~ tmin, data = weather_nest$data[[i]])
+}
+```
+
+
+Now we will try a function
+```{r}
+weather_lm = function(df) {
+  lm(tmax ~ tmin, data = df)
+}
+```
+
+$ vs. pull 
+```{r}
+for (i in 1:3) {
+  output[[i]] = weather_lm(weather_nest$data[[i]])
+}
+
+for (i in 1:3) {
+  output[[i]] = weather_lm(pull(weather_nest, data)[[1]])
+}
+
+output = map(weather_nest$data, weather_lm)
+```
+
+```{r}
+weather_nest %>% 
+  mutate(lin_models = map(data, weather_lm)) %>% 
+  filter(name != "CentralPark_NY")
+```
+
