@@ -161,3 +161,21 @@ sim_results =
 ```
 We can use tibble to create a data frame without multiple lists floating around.
 
+```{r}
+sim_results %>% 
+  group_by(sample_size) %>% 
+  summarize(var_b1 = var(beta1_hat))
+```
+
+
+## Looking at the bivariate distribution of slope estimates across intercept:
+```{r}
+sim_results %>% 
+  mutate(
+    sample_size = str_c("n = ", sample_size),
+    sample_size = fct_inorder(sample_size)) %>% 
+  ggplot(aes(x = beta0_hat, y = beta1_hat, fill = sample_size)) + 
+  geom_point() +
+  facet_grid(~sample_size)
+```
+
