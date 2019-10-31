@@ -134,4 +134,32 @@ for (i in 1:4) {
   output[[i]] = rerun(1000, sim_regression(n = n_list[[i]])) %>% 
     bind_rows
 }
+
+output[[4]] %>% 
+  ggplot(aes(x = beta0_hat)) +
+  geom_density()
 ```
+
+<img src="simulation_files/figure-gfm/unnamed-chunk-9-1.png" width="90%" />
+Takeaway message: in a SLR, if your sample size goes from 30 to 240, on
+average you will get the same distribution, but your range will narrow
+(shrinking the variability with greater n).
+
+The vector function is the generic way of creating a (empty) list in
+R.
+
+## But we can do this without a for loop\! We want to take the results from the for loop we just ran and put it into something more nicely structured.
+
+``` r
+sim_results = 
+  tibble(sample_size = c(30, 60, 120, 240)) %>% 
+  mutate(
+    output_list = map(.x = sample_size, ~ rerun(1000, sim_regression(n = .x))),
+    output_df = map(output_list, bind_rows)
+    ) %>% 
+  select(-output_list) %>% 
+  unnest(output_df)
+```
+
+We can use tibble to create a data frame without multiple lists floating
+around.
